@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Canvas: Interactive Particle Universe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Orbitron:wght@400;600;900&display=swap');
+
+        :root {
+            --primary-color: #6200ea;
+            --accent-color: #03dac6;
+            --text-color: #ffffff;
+            --bg-color: #0a0a14;
+            --panel-bg: rgba(18, 18, 30, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --button-bg: rgba(255, 255, 255, 0.08);
+            --button-hover: rgba(255, 255, 255, 0.15);
+            --button-active: rgba(98, 0, 234, 0.6);
+            --slider-color: #6200ea;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-color);
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            z-index: 10;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 3.5rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            background: linear-gradient(to right, var(--accent-color), var(--primary-color), #ff5a5f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(98, 0, 234, 0.3));
+            transform: perspective(500px) rotateX(10deg);
+            animation: titleGlow 8s infinite alternate;
+        }
+
+        @keyframes titleGlow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 15px rgba(98, 0, 234, 0.3));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 25px rgba(3, 218, 198, 0.5));
+            }
+        }
+
+        .subtitle {
+            font-weight: 300;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .control-toggle {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            width: 50px;
+            height: 50px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .control-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(98, 0, 234, 0.4);
+        }
+
+        .control-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 20px;
+            width: 340px;
+            transform: translateX(400px);
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) rgba(0, 0, 0, 0.2);
+        }
+
+        .control-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .control-panel::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+
+        .control-panel::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 3px;
+        }
+
+        .control-panel.active {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            font-size: 1.2rem;
+            color: var(--accent-color);
+        }
+
+        .panel-close {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .panel-close:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background: var(--button-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 40px;
+        }
+
+        button i {
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: var(--button-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: var(--button-active);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 15px rgba(98, 0, 234, 0.4);
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+
+        .slider-label span:last-child {
+            opacity: 0.7;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--slider-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px var(--slider-color);
+        }
+
+        .color-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .color-option:hover {
+            transform: scale(1.2);
+        }
+
+        .color-option.active {
+            border-color: white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .interactive-guide {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 30px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            opacity: 0.9;
+        }
+
+        .interactive-guide i {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+        }
+
+        .interactive-guide span {
+            font-size: 0.9rem;
+            font-weight: 300;
+        }
+
+        .interactive-guide.fade {
+            opacity: 0;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 200px;
+            text-align: center;
+        }
+
+        .credits {
+            position: absolute;
+            bottom: 80px;
+            left: 20px;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            pointer-events: none;
+            font-family: 'Poppins', sans-serif;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+
+        .credits a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .tooltip.visible {
+            opacity: 1;
+        }
+
+        .theme-purple {
+            --primary-color: #6200ea;
+            --accent-color: #03dac6;
+        }
+
+        .theme-blue {
+            --primary-color: #304ffe;
+            --accent-color: #30ffda;
+        }
+
+        .theme-red {
+            --primary-color: #d50000;
+            --accent-color: #ff9e80;
+        }
+
+        .theme-green {
+            --primary-color: #00c853;
+            --accent-color: #aeea00;
+        }
+
+        .theme-gold {
+            --primary-color: #ff6d00;
+            --accent-color: #ffab00;
+        }
+
+        .custom-cursor {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-color);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.6;
+            transition: width 0.3s, height 0.3s, opacity 0.3s;
+        }
+
+        .custom-cursor-dot {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 0.85rem;
+                padding: 0 20px;
+            }
+
+            .control-panel {
+                width: 300px;
+            }
+
+            .btn-group {
+                grid-template-columns: 1fr;
+            }
+
+            .credits {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 1.5rem;
+            }
+
+            .control-panel {
+                width: 90%;
+                right: 5%;
+            }
+
+            .interactive-guide {
+                left: 10px;
+                right: 10px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body class="theme-purple">
+    <div class="custom-cursor"></div>
+    <div class="custom-cursor-dot"></div>
+
+    <div class="header">
+        <h1 class="title">Cosmic Canvas</h1>
+        <p class="subtitle">Explore an interactive universe of particle effects. Move your cursor to interact with the
+            cosmic forces and click to create gravity wells.</p>
+    </div>
+
+    <div class="interactive-guide">
+        <i class="fas fa-hand-pointer"></i>
+        <span>Click & drag to interact with particles</span>
+    </div>
+
+    <div class="credits">
+        Created by <a href="https://www.linkedin.com/in/danducvu" target="_blank">Dan Vu</a> | © 2025
+    </div>
+
+    <div class="control-toggle">
+        <i class="fas fa-sliders-h"></i>
+    </div>
+
+    <div class="control-panel">
+        <div class="panel-header">
+            <div class="panel-title">Effect Controls</div>
+            <div class="panel-close"><i class="fas fa-times"></i></div>
+        </div>
+
+        <div class="control-section">
+            <h3 class="section-title">Particle Effects</h3>
+            <div class="btn-group">
+                <button id="btn-spiral" class="active" data-tooltip="Particles form elegant spiral patterns">
+                    <i class="fas fa-sync-alt"></i> Spiral
+                </button>
+                <button id="btn-explosion" data-tooltip="Particles explode outward from click points">
+                    <i class="fas fa-bomb"></i> Explosion
+                </button>
+                <button id="btn-vortex" data-tooltip="Creates a swirling vortex following your cursor">
+                    <i class="fas fa-atom"></i> Vortex
+                </button>
+                <button id="btn-nebula" data-tooltip="Colorful gas cloud formation with fluid dynamics">
+                    <i class="fas fa-cloud"></i> Nebula
+                </button>
+                <button id="btn-starfield" data-tooltip="3D star field with depth and warp speed effect">
+                    <i class="fas fa-star"></i> Starfield
+                </button>
+                <button id="btn-galaxy" data-tooltip="Rotating galaxy with spiral arms">
+                    <i class="fas fa-globe"></i> Galaxy
+                </button>
+                <button id="btn-fireflies" data-tooltip="Gentle glowing particles like fireflies">
+                    <i class="fas fa-lightbulb"></i> Fireflies
+                </button>
+                <button id="btn-waves" data-tooltip="Undulating wave patterns of particles">
+                    <i class="fas fa-water"></i> Waves
+                </button>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3 class="section-title">Parameters</h3>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Particle Count</span>
+                    <span id="particle-count-value">1500</span>
+                </div>
+                <input type="range" id="particle-count" min="500" max="5000" value="1500"
+                    data-tooltip="Adjust the number of particles">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Particle Size</span>
+                    <span id="particle-size-value">1.0x</span>
+                </div>
+                <input type="range" id="particle-size" min="0.5" max="3" step="0.1" value="1"
+                    data-tooltip="Change the size of particles">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Particle Speed</span>
+                    <span id="particle-speed-value">1.0x</span>
+                </div>
+                <input type="range" id="particle-speed" min="0.2" max="3" step="0.1" value="1"
+                    data-tooltip="Adjust how fast particles move">
+            </div>
+
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Interaction Strength</span>
+                    <span id="interaction-value">1.0x</span>
+                </div>
+                <input type="range" id="interaction-strength" min="0.2" max="3" step="0.1" value="1"
+                    data-tooltip="Change how strongly particles respond to interaction">
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3 class="section-title">Color Theme</h3>
+            <div class="color-options">
+                <div class="color-option theme-purple active"
+                    style="background: linear-gradient(45deg, #6200ea, #03dac6);" data-theme="purple"
+                    data-tooltip="Purple theme"></div>
+                <div class="color-option theme-blue" style="background: linear-gradient(45deg, #304ffe, #30ffda);"
+                    data-theme="blue" data-tooltip="Blue theme"></div>
+                <div class="color-option theme-red" style="background: linear-gradient(45deg, #d50000, #ff9e80);"
+                    data-theme="red" data-tooltip="Red theme"></div>
+                <div class="color-option theme-green" style="background: linear-gradient(45deg, #00c853, #aeea00);"
+                    data-theme="green" data-tooltip="Green theme"></div>
+                <div class="color-option theme-gold" style="background: linear-gradient(45deg, #ff6d00, #ffab00);"
+                    data-theme="gold" data-tooltip="Gold theme"></div>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3 class="section-title">Special Effects</h3>
+            <div class="btn-group">
+                <button id="btn-glow" class="active" data-tooltip="Toggle enhanced glow effects">
+                    <i class="fas fa-lightbulb"></i> Glow
+                </button>
+                <button id="btn-trails" class="active" data-tooltip="Toggle particle motion trails">
+                    <i class="fas fa-road"></i> Trails
+                </button>
+                <button id="btn-physics" data-tooltip="Enable particle collision physics">
+                    <i class="fas fa-dot-circle"></i> Physics
+                </button>
+                <button id="btn-fade" class="active" data-tooltip="Particles fade in and out">
+                    <i class="fas fa-ghost"></i> Fade
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // DOM elements
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const controlToggle = document.querySelector('.control-toggle');
+        const controlPanel = document.querySelector('.control-panel');
+        const panelClose = document.querySelector('.panel-close');
+        const interactiveGuide = document.querySelector('.interactive-guide');
+        const tooltip = document.getElementById('tooltip');
+        const customCursor = document.querySelector('.custom-cursor');
+        const customCursorDot = document.querySelector('.custom-cursor-dot');
+
+        // Update credits with current user and make it clickable
+        document.querySelector('.credits').innerHTML = 'Created by <a href="https://www.linkedin.com/in/danducvu" target="_blank">Dan Vu</a> | © 2025';
+        document.querySelector('.credits').style.pointerEvents = 'auto';
+
+        // Canvas setup
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Configuration parameters
+        let config = {
+            particleCount: 1500,
+            particleSize: 1.0,
+            particleSpeed: 1.0,
+            interactionStrength: 1.0,
+            glowEnabled: true,
+            trailsEnabled: true,
+            physicsEnabled: false,
+            fadeEnabled: true,
+            currentMode: 'spiral'
+        };
+
+        // Mouse tracking
+        const mouse = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            prevX: canvas.width / 2,
+            prevY: canvas.height / 2,
+            pressed: false,
+            velocity: { x: 0, y: 0 }
+        };
+
+        // Event listeners
+        window.addEventListener('mousemove', function (event) {
+            mouse.prevX = mouse.x;
+            mouse.prevY = mouse.y;
+            mouse.x = event.x;
+            mouse.y = event.y;
+            mouse.velocity.x = mouse.x - mouse.prevX;
+            mouse.velocity.y = mouse.y - mouse.prevY;
+
+            // Update custom cursor
+            customCursor.style.left = `${event.x}px`;
+            customCursor.style.top = `${event.y}px`;
+            customCursorDot.style.left = `${event.x}px`;
+            customCursorDot.style.top = `${event.y}px`;
+
+            if (mouse.pressed) {
+                customCursor.style.width = '50px';
+                customCursor.style.height = '50px';
+                customCursor.style.opacity = '0.8';
+            } else {
+                customCursor.style.width = '30px';
+                customCursor.style.height = '30px';
+                customCursor.style.opacity = '0.6';
+            }
+
+            // Hide the guide after mouse movement
+            setTimeout(() => {
+                interactiveGuide.classList.add('fade');
+            }, 3000);
+        });
+
+        window.addEventListener('mousedown', function () {
+            mouse.pressed = true;
+            customCursor.style.width = '50px';
+            customCursor.style.height = '50px';
+            customCursor.style.opacity = '0.8';
+        });
+
+        window.addEventListener('mouseup', function () {
+            mouse.pressed = false;
+            customCursor.style.width = '30px';
+            customCursor.style.height = '30px';
+            customCursor.style.opacity = '0.6';
+        });
+
+        window.addEventListener('resize', function () {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init();
+        });
+
+        // Hide cursor and show custom cursor
+        document.body.style.cursor = 'none';
+
+        // Control panel toggle
+        controlToggle.addEventListener('click', function () {
+            controlPanel.classList.add('active');
+            controlToggle.style.opacity = '0';
+            setTimeout(() => { controlToggle.style.display = 'none'; }, 300);
+        });
+
+        panelClose.addEventListener('click', function () {
+            controlPanel.classList.remove('active');
+            controlToggle.style.display = 'flex';
+            setTimeout(() => { controlToggle.style.opacity = '1'; }, 50);
+        });
+
+        // Button click handlers
+        const modeButtons = document.querySelectorAll('[id^="btn-"]');
+        modeButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                if (this.id === 'btn-glow') {
+                    config.glowEnabled = !config.glowEnabled;
+                    this.classList.toggle('active');
+                    return;
+                }
+
+                if (this.id === 'btn-trails') {
+                    config.trailsEnabled = !config.trailsEnabled;
+                    this.classList.toggle('active');
+                    return;
+                }
+
+                if (this.id === 'btn-physics') {
+                    config.physicsEnabled = !config.physicsEnabled;
+                    this.classList.toggle('active');
+                    return;
+                }
+
+                if (this.id === 'btn-fade') {
+                    config.fadeEnabled = !config.fadeEnabled;
+                    this.classList.toggle('active');
+                    return;
+                }
+
+                // For mode buttons
+                const mode = this.id.replace('btn-', '');
+                if (['spiral', 'explosion', 'vortex', 'nebula', 'starfield', 'galaxy', 'fireflies', 'waves'].includes(mode)) {
+                    config.currentMode = mode;
+
+                    // Remove active class from all mode buttons
+                    document.querySelectorAll('[id^="btn-spiral"], [id^="btn-explosion"], [id^="btn-vortex"], [id^="btn-nebula"], [id^="btn-starfield"], [id^="btn-galaxy"], [id^="btn-fireflies"], [id^="btn-waves"]').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+
+                    // Add active class to clicked button
+                    this.classList.add('active');
+
+                    init();
+                }
+            });
+
+            // Add tooltip functionality
+            if (button.dataset.tooltip) {
+                button.addEventListener('mouseenter', function (e) {
+                    tooltip.textContent = this.dataset.tooltip;
+                    tooltip.style.left = `${e.clientX}px`;
+                    tooltip.style.top = `${e.clientY - 40}px`;
+                    tooltip.classList.add('visible');
+                });
+
+                button.addEventListener('mousemove', function (e) {
+                    tooltip.style.left = `${e.clientX}px`;
+                    tooltip.style.top = `${e.clientY - 40}px`;
+                });
+
+                button.addEventListener('mouseleave', function () {
+                    tooltip.classList.remove('visible');
+                });
+            }
+        });
+
+        // Slider handlers
+        const particleCountSlider = document.getElementById('particle-count');
+        const particleSizeSlider = document.getElementById('particle-size');
+        const particleSpeedSlider = document.getElementById('particle-speed');
+        const interactionStrengthSlider = document.getElementById('interaction-strength');
+
+        particleCountSlider.addEventListener('input', function () {
+            config.particleCount = parseInt(this.value);
+            document.getElementById('particle-count-value').textContent = config.particleCount;
+            init();
+        });
+
+        particleSizeSlider.addEventListener('input', function () {
+            config.particleSize = parseFloat(this.value);
+            document.getElementById('particle-size-value').textContent = `${config.particleSize.toFixed(1)}x`;
+        });
+
+        particleSpeedSlider.addEventListener('input', function () {
+            config.particleSpeed = parseFloat(this.value);
+            document.getElementById('particle-speed-value').textContent = `${config.particleSpeed.toFixed(1)}x`;
+        });
+
+        interactionStrengthSlider.addEventListener('input', function () {
+            config.interactionStrength = parseFloat(this.value);
+            document.getElementById('interaction-value').textContent = `${config.interactionStrength.toFixed(1)}x`;
+        });
+
+        // Theme selectors
+        const themeOptions = document.querySelectorAll('.color-option');
+        themeOptions.forEach(option => {
+            option.addEventListener('click', function () {
+                // Remove active class from all options
+                themeOptions.forEach(opt => opt.classList.remove('active'));
+                // Add active class to clicked option
+                this.classList.add('active');
+
+                // Apply theme
+                document.body.className = `theme-${this.dataset.theme}`;
+            });
+
+            // Add tooltip functionality
+            if (option.dataset.tooltip) {
+                option.addEventListener('mouseenter', function (e) {
+                    tooltip.textContent = this.dataset.tooltip;
+                    tooltip.style.left = `${e.clientX}px`;
+                    tooltip.style.top = `${e.clientY - 40}px`;
+                    tooltip.classList.add('visible');
+                });
+
+                option.addEventListener('mousemove', function (e) {
+                    tooltip.style.left = `${e.clientX}px`;
+                    tooltip.style.top = `${e.clientY - 40}px`;
+                });
+
+                option.addEventListener('mouseleave', function () {
+                    tooltip.classList.remove('visible');
+                });
+            }
+        });
+
+        // Particle class
+        class Particle {
+            constructor(x, y) {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.baseSize = this.size * config.particleSize;
+                this.speedX = 0;
+                this.speedY = 0;
+                this.trail = [];
+                this.maxTrailLength = Math.floor(Math.random() * 10) + 3;
+                this.life = 1;
+                this.fadeRate = Math.random() * 0.01 + 0.005;
+                this.isFading = Math.random() > 0.7;
+
+                // Spiral parameters
+                this.angle = Math.random() * Math.PI * 2;
+                this.radius = Math.random() * (canvas.width / 4) + 50;
+                this.angleSpeed = (Math.random() * 0.002 + 0.001) * config.particleSpeed;
+                this.radiusSpeed = Math.random() * 0.3 + 0.1;
+
+                // Center point for the particle
+                const centerChoice = Math.random();
+                if (centerChoice < 0.33) {
+                    this.centerX = canvas.width * 0.25;
+                    this.centerY = canvas.height * 0.5;
+                } else if (centerChoice < 0.66) {
+                    this.centerX = canvas.width * 0.75;
+                    this.centerY = canvas.height * 0.5;
+                } else {
+                    this.centerX = canvas.width * 0.5;
+                    this.centerY = canvas.height * 0.5;
+                }
+
+                // Color - based on the current theme
+                const root = document.documentElement;
+                const computedStyle = getComputedStyle(root);
+                this.primaryColor = computedStyle.getPropertyValue('--primary-color').trim();
+                this.accentColor = computedStyle.getPropertyValue('--accent-color').trim();
+
+                // Convert colors to HSL
+                this.hue = Math.random() * 60 + 200; // Default blue to purple range
+
+                // Check theme colors and adjust hue range
+                if (document.body.classList.contains('theme-purple')) {
+                    this.hue = Math.random() * 60 + 240; // Purple range
+                } else if (document.body.classList.contains('theme-blue')) {
+                    this.hue = Math.random() * 40 + 200; // Blue range
+                } else if (document.body.classList.contains('theme-red')) {
+                    this.hue = Math.random() * 40 + 0; // Red range
+                } else if (document.body.classList.contains('theme-green')) {
+                    this.hue = Math.random() * 40 + 100; // Green range
+                } else if (document.body.classList.contains('theme-gold')) {
+                    this.hue = Math.random() * 40 + 30; // Gold range
+                }
+
+                this.saturation = 100;
+                this.lightness = 50;
+                this.alpha = Math.random() * 0.8 + 0.2;
+
+                // For explosion mode
+                this.explosionX = (Math.random() * 20 - 10) * config.particleSpeed;
+                this.explosionY = (Math.random() * 20 - 10) * config.particleSpeed;
+                this.friction = 0.98;
+
+                // For vortex mode
+                this.vortexAngle = Math.random() * Math.PI * 2;
+                this.vortexSpeed = (Math.random() * 0.2 + 0.1) * config.particleSpeed;
+                this.vortexRadius = Math.random() * 200 + 50;
+
+                // For nebula mode
+                this.nebulaX = Math.random() * canvas.width;
+                this.nebulaY = Math.random() * canvas.height;
+                this.nebulaAngle = Math.random() * Math.PI * 2;
+                this.nebulaRadius = Math.random() * 100 + 20;
+                this.nebulaSpeed = (Math.random() * 0.01 + 0.005) * config.particleSpeed;
+                this.waveFactor = Math.random() * 50 + 5;
+
+                // For starfield mode
+                this.starZ = Math.random() * 1000 + 1;
+                this.starSpeed = (Math.random() * 10 + 5) * config.particleSpeed;
+                this.originalX = (Math.random() - 0.5) * 2000;
+                this.originalY = (Math.random() - 0.5) * 2000;
+                this.originalZ = this.starZ;
+
+                // For galaxy mode
+                this.galaxyAngle = Math.random() * Math.PI * 2;
+                this.galaxyRadius = Math.random() * canvas.width * 0.3 + 20;
+                this.galaxySpeed = (Math.random() * 0.001 + 0.0005) * config.particleSpeed;
+                this.galaxyArmOffset = Math.sin(this.galaxyRadius / 20) * 0.5;
+                this.galaxyThickness = Math.abs(Math.random() * 20 - 10);
+
+                // For fireflies mode
+                this.fireflyBrightness = Math.random();
+                this.fireflySpeed = (Math.random() * 0.5 + 0.1) * config.particleSpeed;
+                this.fireflyPhase = Math.random() * Math.PI * 2;
+                this.fireflyTimeFactor = Math.random() * 0.002 + 0.001;
+
+                // For waves mode
+                this.waveAmplitude = Math.random() * 50 + 10;
+                this.waveLength = Math.random() * 0.02 + 0.01;
+                this.waveSpeed = (Math.random() * 0.005 + 0.002) * config.particleSpeed;
+                this.waveOffset = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                // Handle fade effect if enabled
+                if (config.fadeEnabled && this.isFading) {
+                    this.life += Math.sin(Date.now() * this.fadeRate) * 0.03;
+                    this.life = Math.max(0.3, Math.min(1, this.life));
+                    this.alpha = this.life * 0.8;
+                }
+
+                // Add current position to trail if trails are enabled
+                if (config.trailsEnabled && config.currentMode !== 'starfield') {
+                    this.trail.push({ x: this.x, y: this.y, size: this.size, hue: this.hue });
+                    if (this.trail.length > this.maxTrailLength) {
+                        this.trail.shift();
+                    }
+                }
+
+                // Different behavior based on mode
+                switch (config.currentMode) {
+                    case 'spiral':
+                        this.updateSpiral();
+                        break;
+                    case 'explosion':
+                        this.updateExplosion();
+                        break;
+                    case 'vortex':
+                        this.updateVortex();
+                        break;
+                    case 'nebula':
+                        this.updateNebula();
+                        break;
+                    case 'starfield':
+                        this.updateStarfield();
+                        break;
+                    case 'galaxy':
+                        this.updateGalaxy();
+                        break;
+                    case 'fireflies':
+                        this.updateFireflies();
+                        break;
+                    case 'waves':
+                        this.updateWaves();
+                        break;
+                }
+
+                // Apply particle physics if enabled
+                if (config.physicsEnabled) {
+                    this.handleCollisions();
+                }
+
+                this.draw();
+            }
+
+            updateSpiral() {
+                // Mouse influence - stronger when mouse is pressed
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // When mouse is pressed, create a gravity well
+                if (mouse.pressed && distance < 200) {
+                    const force = (200 - distance) / 200 * config.interactionStrength;
+                    this.speedX += (dx / distance) * force * 0.5;
+                    this.speedY += (dy / distance) * force * 0.5;
+
+                    // Increase size and brightness near mouse
+                    this.size = Math.min(8, this.size + 0.1) * config.particleSize;
+                    this.lightness = Math.min(80, this.lightness + 0.5);
+                } else {
+                    // Otherwise follow spiral pattern
+                    this.angle += this.angleSpeed;
+
+                    // Calculate target position on spiral
+                    const targetX = this.centerX + Math.cos(this.angle) * this.radius;
+                    const targetY = this.centerY + Math.sin(this.angle) * this.radius;
+
+                    // Smoothly move toward target
+                    this.x += (targetX - this.x) * 0.05 * config.particleSpeed;
+                    this.y += (targetY - this.y) * 0.05 * config.particleSpeed;
+
+                    // Slowly reduce size and reset brightness
+                    this.size = Math.max(0.5, this.size * 0.99);
+                    this.lightness = Math.max(50, this.lightness - 0.5);
+
+                    // Apply any residual speed from mouse interaction
+                    this.speedX *= 0.95;
+                    this.speedY *= 0.95;
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                }
+
+                // Gradually change color
+                this.hue += 0.2;
+                if (this.hue > 360) this.hue = 0;
+            }
+
+            updateExplosion() {
+                // Explosion effect - particles fly outward from mouse when clicked
+                if (mouse.pressed) {
+                    const dx = this.x - mouse.x;
+                    const dy = this.y - mouse.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 200) {
+                        const angle = Math.atan2(dy, dx);
+                        const force = (200 - distance) / 5 * config.interactionStrength; // Increased force
+                        this.explosionX = Math.cos(angle) * force;
+                        this.explosionY = Math.sin(angle) * force;
+
+                        // Enhance particle appearance during explosion
+                        this.size = this.baseSize * 3;
+                        this.lightness = 70;
+                    }
+                }
+
+                // Apply explosion momentum with friction
+                this.x += this.explosionX;
+                this.y += this.explosionY;
+                this.explosionX *= this.friction;
+                this.explosionY *= this.friction;
+
+                // Gradually return to base size
+                this.size = this.size * 0.98 + this.baseSize * 0.02;
+
+                // Wrap around screen edges with a bit of randomness
+                if (this.x < 0) this.x = canvas.width + Math.random() * 10;
+                if (this.x > canvas.width) this.x = 0 - Math.random() * 10;
+                if (this.y < 0) this.y = canvas.height + Math.random() * 10;
+                if (this.y > canvas.height) this.y = 0 - Math.random() * 10;
+
+                // Pulse size
+                this.size *= 0.9 + Math.sin(Date.now() * 0.005 + this.angle) * 0.1 + 0.1;
+
+                // Change color based on speed
+                const speed = Math.sqrt(this.explosionX * this.explosionX + this.explosionY * this.explosionY);
+                this.hue = 180 + speed * 30; // More dramatic color change
+                this.saturation = 100;
+                this.lightness = 50 + speed * 15; // More dramatic brightness change
+
+                // Occasionally add a bit of random motion to keep things interesting
+                if (Math.random() < 0.05) {
+                    this.explosionX += (Math.random() - 0.5) * 2;
+                    this.explosionY += (Math.random() - 0.5) * 2;
+                }
+            }
+
+            updateVortex() {
+                // Vortex effect - particles spiral inward toward mouse
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Update vortex angle
+                this.vortexAngle += this.vortexSpeed;
+
+                if (mouse.pressed) {
+                    // When mouse is pressed, particles are drawn toward it
+                    if (distance > 5) {
+                        this.x += dx * 0.02 * config.interactionStrength;
+                        this.y += dy * 0.02 * config.interactionStrength;
+                    }
+
+                    // Increase brightness near mouse
+                    this.lightness = 50 + (200 - Math.min(200, distance)) / 4;
+                } else {
+                    // Otherwise orbit in concentric circles
+                    const orbitRadius = this.vortexRadius * (1 + Math.sin(Date.now() * 0.001) * 0.2);
+                    this.x = mouse.x + Math.cos(this.vortexAngle) * orbitRadius;
+                    this.y = mouse.y + Math.sin(this.vortexAngle) * orbitRadius;
+                }
+
+                // Pulse size
+                this.size = (1 + Math.sin(this.vortexAngle * 3) * 1) * config.particleSize;
+
+                // Color transition based on angle
+                this.hue = (this.vortexAngle * 30) % 360;
+            }
+
+            updateNebula() {
+                // Nebula effect - particles move in fluid, cloud-like formations
+                const time = Date.now() * 0.001;
+
+                // Use perlin-like noise approximation for smooth movement
+                const noiseX = Math.sin(time * this.nebulaSpeed + this.x * 0.01) *
+                    Math.cos(time * this.nebulaSpeed * 1.5 + this.y * 0.01);
+                const noiseY = Math.cos(time * this.nebulaSpeed + this.x * 0.01) *
+                    Math.sin(time * this.nebulaSpeed * 1.5 + this.y * 0.01);
+
+                // Apply the noise as movement
+                this.x += noiseX * 2 * config.particleSpeed;
+                this.y += noiseY * 2 * config.particleSpeed;
+
+                // Gradually move toward center if too far out
+                const distanceFromCenter = Math.sqrt(
+                    Math.pow(this.x - canvas.width / 2, 2) +
+                    Math.pow(this.y - canvas.height / 2, 2)
+                );
+
+                if (distanceFromCenter > canvas.width * 0.4) {
+                    this.x += (canvas.width / 2 - this.x) * 0.01;
+                    this.y += (canvas.height / 2 - this.y) * 0.01;
+                }
+
+                // Influence from mouse movement
+                if (mouse.pressed) {
+                    const dx = this.x - mouse.x;
+                    const dy = this.y - mouse.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 200) {
+                        this.x += dx * 0.05 * config.interactionStrength;
+                        this.y += dy * 0.05 * config.interactionStrength;
+                        this.size = Math.min(this.size * 1.05, this.baseSize * 3);
+                    }
+                } else {
+                    // Gradually return to base size
+                    this.size = this.size * 0.95 + this.baseSize * 0.05;
+                }
+
+                // Wrap around screen edges
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+
+                // Color cycling for nebula effect - pastel cosmic colors
+                this.hue = (this.hue + 0.2) % 360;
+                this.saturation = 70 + Math.sin(time + this.angle) * 30;
+                this.lightness = 50 + Math.sin(time * 0.5 + this.angle * 2) * 20;
+
+                // Varying opacity for cloud effect
+                this.alpha = 0.3 + Math.sin(time + this.x * 0.01) * 0.3 + 0.4;
+            }
+
+            updateStarfield() {
+                // Starfield effect - 3D star field with depth
+                // Update Z position (depth)
+                this.starZ -= this.starSpeed;
+
+                // If star has passed the viewer, reset it far away
+                if (this.starZ <= 0) {
+                    this.starZ = Math.random() * 1000 + 1;
+                    this.originalX = (Math.random() - 0.5) * 2000;
+                    this.originalY = (Math.random() - 0.5) * 2000;
+                    this.originalZ = this.starZ;
+                }
+
+                // Project 3D position to 2D screen
+                const factor = 300 / this.starZ;
+                this.x = canvas.width / 2 + this.originalX * factor;
+                this.y = canvas.height / 2 + this.originalY * factor;
+
+                // Size based on depth
+                this.size = Math.max(0.5, (1000 - this.starZ) / 100) * config.particleSize;
+
+                // Brightness based on depth
+                this.lightness = Math.min(100, 100 - (this.starZ / 10));
+
+                // Color based on depth/speed
+                this.hue = 220 + (this.starSpeed * 10) % 140; // Blue to purple range
+
+                // Add streaking effect when mouse is pressed
+                if (mouse.pressed) {
+                    this.starSpeed = Math.min(50, this.starSpeed * 1.05);
+                    this.maxTrailLength = 20;
+                } else {
+                    this.starSpeed = Math.max(5, this.starSpeed * 0.98);
+                    this.maxTrailLength = 5;
+                }
+
+                // Handle stars going off-screen
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.starZ = Math.random() * 1000 + 1;
+                    this.originalX = (Math.random() - 0.5) * 2000;
+                    this.originalY = (Math.random() - 0.5) * 2000;
+                    this.originalZ = this.starZ;
+                }
+            }
+
+            updateGalaxy() {
+                // Galaxy effect - rotating spiral galaxy
+                const time = Date.now() * 0.0001;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                // Base rotation
+                this.galaxyAngle += this.galaxySpeed * config.particleSpeed;
+
+                // Calculate position with spiral arms (logarithmic spiral)
+                const spiralFactor = 0.1;  // Controls how tight the spiral is
+                const armOffset = Math.sin(this.galaxyRadius * 0.02 + this.galaxyArmOffset * Math.PI * 2) * this.galaxyThickness;
+
+                // Add mouse interaction to galaxy
+                let galaxyCenterX = centerX;
+                let galaxyCenterY = centerY;
+
+                if (mouse.pressed) {
+                    // Pull galaxy center toward mouse
+                    galaxyCenterX = centerX + (mouse.x - centerX) * 0.2;
+                    galaxyCenterY = centerY + (mouse.y - centerY) * 0.2;
+
+                    // Increase rotation speed when mouse is pressed
+                    this.galaxyAngle += this.galaxySpeed * 5;
+                }
+
+                // Calculate spiral position
+                const spiral = this.galaxyAngle + this.galaxyRadius * spiralFactor;
+                const distanceFromCenter = this.galaxyRadius + armOffset;
+
+                this.x = galaxyCenterX + Math.cos(spiral) * distanceFromCenter;
+                this.y = galaxyCenterY + Math.sin(spiral) * distanceFromCenter;
+
+                // Calculate distance from galaxy center for coloring
+                const dx = this.x - galaxyCenterX;
+                const dy = this.y - galaxyCenterY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Size based on distance from center - smaller near center
+                this.size = (0.5 + Math.min(5, (distance / 100))) * config.particleSize;
+
+                // Color based on position in galaxy
+                this.hue = (distance / 5 + time * 100) % 360;
+                this.saturation = 80 + Math.sin(this.galaxyAngle * 5) * 20;
+                this.lightness = Math.max(30, 80 - distance / 20);
+
+                // Opacity decreases at the outer edges
+                this.alpha = Math.max(0.1, 1 - distance / (canvas.width * 0.4));
+            }
+
+            updateFireflies() {
+                // Fireflies effect - gently glowing particles that move organically
+                const time = Date.now() * 0.001;
+
+                // Smooth random movement
+                const angle = Math.sin(time * this.fireflyTimeFactor + this.fireflyPhase) * Math.PI * 2;
+                const speed = Math.sin(time * this.fireflyTimeFactor * 0.5 + this.fireflyPhase) * 0.5 + 0.5;
+
+                this.x += Math.cos(angle) * this.fireflySpeed * speed * config.particleSpeed;
+                this.y += Math.sin(angle) * this.fireflySpeed * speed * config.particleSpeed;
+
+                // Pulsating glow effect
+                const glow = Math.sin(time * this.fireflyTimeFactor * 2 + this.fireflyPhase) * 0.5 + 0.5;
+                this.size = (this.baseSize + glow * 2) * config.particleSize;
+                this.alpha = 0.2 + glow * 0.8;
+
+                // Mouse interaction - attract fireflies
+                if (mouse.pressed) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 200) {
+                        const force = (200 - distance) / 200 * config.interactionStrength;
+                        this.x += dx * 0.01 * force;
+                        this.y += dy * 0.01 * force;
+                        this.size = Math.min(8, this.size * 1.05);
+                        this.alpha = Math.min(1, this.alpha * 1.05);
+                    }
+                }
+
+                // Keep particles within bounds
+                if (this.x < 0 || this.x > canvas.width) {
+                    this.x = Math.max(0, Math.min(canvas.width, this.x));
+                    this.fireflyPhase = Math.random() * Math.PI * 2;
+                }
+
+                if (this.y < 0 || this.y > canvas.height) {
+                    this.y = Math.max(0, Math.min(canvas.height, this.y));
+                    this.fireflyPhase = Math.random() * Math.PI * 2;
+                }
+
+                // Gentle color shift based on time
+                this.hue = (this.hue + 0.1) % 360;
+                this.lightness = 50 + glow * 30;
+            }
+
+            updateWaves() {
+                // Wave pattern effect - particles move in undulating waves
+                const time = Date.now() * 0.001;
+
+                // Base position calculation
+                const baseX = (this.x + time * 30 * config.particleSpeed) % canvas.width;
+                const waveY = Math.sin(baseX * this.waveLength + this.waveOffset + time * this.waveSpeed) * this.waveAmplitude;
+
+                // Update position
+                this.x = (this.x + config.particleSpeed) % canvas.width;
+                if (this.x < 0) this.x += canvas.width;
+
+                // Calculate target Y position based on wave pattern
+                const targetY = canvas.height / 2 + waveY;
+
+                // Smoothly move toward target Y
+                this.y += (targetY - this.y) * 0.1;
+
+                // Mouse interaction creates ripples
+                if (mouse.pressed) {
+                    const dx = this.x - mouse.x;
+                    const dy = this.y - mouse.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 150) {
+                        // Create ripple effect from mouse
+                        const rippleOffset = Math.sin(distance * 0.05 - time * 5) * 20 * (1 - distance / 150);
+                        this.y += rippleOffset * config.interactionStrength;
+
+                        // Highlight particles in the ripple
+                        this.size = Math.min(8, this.baseSize * 2);
+                        this.lightness = Math.min(80, this.lightness + 20);
+                    } else {
+                        // Return to base size
+                        this.size = Math.max(this.baseSize, this.size * 0.95);
+                        this.lightness = Math.max(50, this.lightness - 2);
+                    }
+                } else {
+                    // Return to base size
+                    this.size = Math.max(this.baseSize, this.size * 0.95);
+                    this.lightness = Math.max(50, this.lightness - 2);
+                }
+
+                // Size pulsation
+                this.size *= 0.9 + Math.sin(time + this.waveOffset) * 0.1 + 0.1;
+
+                // Color based on height
+                this.hue = (this.y / canvas.height * 60 + time * 10) % 360;
+            }
+
+            handleCollisions() {
+                // Simple physics simulation - collision with other particles
+                for (let i = 0; i < particles.length; i++) {
+                    const other = particles[i];
+                    if (other === this) continue;
+
+                    const dx = other.x - this.x;
+                    const dy = other.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = (this.size + other.size) * 2;
+
+                    if (distance < minDist) {
+                        // Calculate repulsion force
+                        const force = (minDist - distance) / minDist;
+                        const forceX = dx / distance * force * 0.5;
+                        const forceY = dy / distance * force * 0.5;
+
+                        // Apply forces in opposite directions
+                        this.speedX -= forceX;
+                        this.speedY -= forceY;
+                        other.speedX += forceX;
+                        other.speedY += forceY;
+
+                        // Create a small light flash at collision
+                        this.lightness = Math.min(80, this.lightness + 10);
+                        other.lightness = Math.min(80, other.lightness + 10);
+                    }
+                }
+
+                // Apply the calculated speed
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // Apply friction
+                this.speedX *= 0.97;
+                this.speedY *= 0.97;
+
+                // Bounce off walls
+                const padding = this.size;
+                if (this.x - padding < 0) {
+                    this.x = padding;
+                    this.speedX *= -0.7;
+                } else if (this.x + padding > canvas.width) {
+                    this.x = canvas.width - padding;
+                    this.speedX *= -0.7;
+                }
+
+                if (this.y - padding < 0) {
+                    this.y = padding;
+                    this.speedY *= -0.7;
+                } else if (this.y + padding > canvas.height) {
+                    this.y = canvas.height - padding;
+                    this.speedY *= -0.7;
+                }
+            }
+
+            draw() {
+                // Draw particle trail if enabled
+                if (config.trailsEnabled && this.trail.length > 1) {
+                    for (let i = 0; i < this.trail.length - 1; i++) {
+                        const t = this.trail[i];
+                        const nextT = this.trail[i + 1];
+                        const alpha = i / this.trail.length * 0.3 * this.alpha;
+
+                        ctx.beginPath();
+                        ctx.moveTo(t.x, t.y);
+                        ctx.lineTo(nextT.x, nextT.y);
+                        ctx.strokeStyle = `hsla(${t.hue}, ${this.saturation}%, ${this.lightness}%, ${alpha})`;
+                        ctx.lineWidth = t.size * 0.8;
+                        ctx.stroke();
+                    }
+                }
+
+                // Draw main particle
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${this.alpha})`;
+                ctx.fill();
+
+                // Add glow effect if enabled
+                if (config.glowEnabled && (this.size > 1.2 || config.currentMode === 'starfield' || config.currentMode === 'fireflies')) {
+                    const glowSize = config.currentMode === 'starfield' ? this.size * 3 : this.size * 2;
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, glowSize
+                    );
+                    gradient.addColorStop(0, `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${this.alpha * 0.8})`);
+                    gradient.addColorStop(1, `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, 0)`);
+
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                }
+
+                // Special starfield streaking effect
+                if (config.currentMode === 'starfield' && mouse.pressed && this.size > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x + (this.x - canvas.width / 2) * 0.1,
+                        this.y + (this.y - canvas.height / 2) * 0.1);
+
+                    const gradient = ctx.createLinearGradient(
+                        this.x, this.y,
+                        this.x + (this.x - canvas.width / 2) * 0.1,
+                        this.y + (this.y - canvas.height / 2) * 0.1
+                    );
+                    gradient.addColorStop(0, `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${this.alpha})`);
+                    gradient.addColorStop(1, `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, 0)`);
+
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = this.size * 2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // Particle array
+        let particles = [];
+
+        // Initialize particles
+        function init() {
+            // Clear existing particles
+            particles = [];
+
+            // Calculate particle count based on screen size and mode
+            let particleCount = Math.min(config.particleCount, (canvas.width * canvas.height) / 5000);
+
+            // Adjust particle count based on mode
+            if (config.currentMode === 'nebula') {
+                particleCount = Math.min(config.particleCount, (canvas.width * canvas.height) / 8000);
+            } else if (config.currentMode === 'starfield') {
+                particleCount = Math.min(config.particleCount, (canvas.width * canvas.height) / 3000);
+            }
+
+            // Create particles
+            for (let i = 0; i < particleCount; i++) {
+                // For explosion mode, cluster particles near mouse
+                if (config.currentMode === 'explosion') {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * 100;
+                    const x = mouse.x + Math.cos(angle) * distance;
+                    const y = mouse.y + Math.sin(angle) * distance;
+                    particles.push(new Particle(x, y));
+                } else {
+                    particles.push(new Particle());
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            // Clear canvas with fade effect - adjust fade based on mode
+            if (config.currentMode === 'nebula') {
+                ctx.fillStyle = 'rgba(10, 10, 20, 0.05)';
+            } else if (config.currentMode === 'starfield') {
+                ctx.fillStyle = 'rgba(0, 0, 10, 0.3)';
+            } else {
+                ctx.fillStyle = 'rgba(10, 10, 20, 0.2)';
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update particles
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+            }
+
+            // Add a few new particles occasionally
+            if (Math.random() < 0.05 && particles.length < config.particleCount * 1.2) {
+                if (config.currentMode === 'explosion') {
+                    // New explosion particles near mouse
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * 50;
+                    const x = mouse.x + Math.cos(angle) * distance;
+                    const y = mouse.y + Math.sin(angle) * distance;
+                    particles.push(new Particle(x, y));
+                } else {
+                    particles.push(new Particle(mouse.x, mouse.y));
+                }
+            }
+
+            // Add mouse trail effect
+            if (mouse.pressed && (config.currentMode === 'spiral' || config.currentMode === 'vortex')) {
+                const dx = mouse.x - mouse.prevX;
+                const dy = mouse.y - mouse.prevY;
+                const mouseSpeed = Math.sqrt(dx * dx + dy * dy);
+
+                if (mouseSpeed > 5) {
+                    for (let i = 0; i < 3; i++) {
+                        const trailX = mouse.x - dx * (i * 0.3);
+                        const trailY = mouse.y - dy * (i * 0.3);
+                        particles.push(new Particle(trailX, trailY));
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation
+        init();
+        animate();
+    </script>
+</body>
+
+</html>
