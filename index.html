@@ -429,26 +429,50 @@
         }
 
         /* Responsive styles */
+
         @media (max-width: 768px) {
             .title {
                 font-size: 2rem;
+                padding: 0 10px;
             }
 
             .subtitle {
                 font-size: 0.85rem;
                 padding: 0 20px;
+                max-width: 100%;
+            }
+
+            .header {
+                padding: 1rem;
             }
 
             .control-panel {
-                width: 300px;
+                width: 80%;
+                max-height: 80vh;
+                right: 10%;
+            }
+
+            .control-toggle {
+                bottom: 15px;
+                right: 15px;
             }
 
             .btn-group {
                 grid-template-columns: 1fr;
             }
 
+            .interactive-guide {
+                left: 50%;
+                transform: translateX(-50%);
+                width: 80%;
+                justify-content: center;
+                text-align: center;
+            }
+
             .credits {
-                display: none;
+                bottom: 15px;
+                left: 15px;
+                font-size: 0.7rem;
             }
         }
 
@@ -457,15 +481,89 @@
                 font-size: 1.5rem;
             }
 
+            .subtitle {
+                font-size: 0.8rem;
+            }
+
             .control-panel {
                 width: 90%;
                 right: 5%;
+                padding: 15px;
+            }
+
+            .section-title {
+                font-size: 0.8rem;
+            }
+
+            .panel-title {
+                font-size: 1rem;
+            }
+
+            button {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+                height: 36px;
+            }
+
+            .color-options {
+                justify-content: center;
+            }
+
+            .slider-label {
+                font-size: 0.75rem;
             }
 
             .interactive-guide {
-                left: 10px;
-                right: 10px;
-                justify-content: center;
+                bottom: 15px;
+                font-size: 0.75rem;
+                padding: 8px 15px;
+            }
+
+            .interactive-guide i {
+                font-size: 1rem;
+            }
+        }
+
+        /* Extra small devices */
+        @media (max-width: 360px) {
+            .title {
+                font-size: 1.2rem;
+            }
+
+            .subtitle {
+                font-size: 0.7rem;
+            }
+
+            .control-panel {
+                padding: 10px;
+            }
+
+            .color-option {
+                width: 25px;
+                height: 25px;
+            }
+        }
+
+        /* Better custom cursor handling for touch devices */
+        @media (pointer: coarse) {
+
+            .custom-cursor,
+            .custom-cursor-dot {
+                display: none;
+            }
+
+            body {
+                cursor: auto;
+            }
+        }
+
+        .mobile-hidden {
+            display: inline;
+        }
+
+        @media (max-width: 480px) {
+            .mobile-hidden {
+                display: none;
             }
         }
     </style>
@@ -477,8 +575,8 @@
 
     <div class="header">
         <h1 class="title">Cosmic Canvas</h1>
-        <p class="subtitle">Explore an interactive universe of particle effects. Move your cursor to interact with the
-            cosmic forces and click to create gravity wells.</p>
+        <p class="subtitle">Explore an interactive universe of particle effects. <span class="mobile-hidden">Move your
+                cursor to interact with the cosmic forces and click to create gravity wells.</span></p>
     </div>
 
     <div class="interactive-guide">
@@ -622,6 +720,41 @@
         const customCursor = document.querySelector('.custom-cursor');
         const customCursorDot = document.querySelector('.custom-cursor-dot');
 
+        // Improve panel behavior on mobile
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+        if (isMobile) {
+            // Automatically close panel when a button is clicked on mobile
+            const allButtons = controlPanel.querySelectorAll('button');
+            allButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    // Don't auto-close for toggle buttons
+                    if (!this.id.includes('btn-glow') &&
+                        !this.id.includes('btn-trails') &&
+                        !this.id.includes('btn-physics') &&
+                        !this.id.includes('btn-fade')) {
+                        setTimeout(() => {
+                            controlPanel.classList.remove('active');
+                            controlToggle.style.display = 'flex';
+                            setTimeout(() => { controlToggle.style.opacity = '1'; }, 50);
+                        }, 300);
+                    }
+                });
+            });
+
+            // Update interactive guide text for touch
+            document.querySelector('.interactive-guide span').textContent = 'Tap & drag to interact with particles';
+            document.querySelector('.interactive-guide i').className = 'fas fa-hand-pointer';
+        }
+
+        // Handle orientation change
+        window.addEventListener('orientationchange', function () {
+            setTimeout(() => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                init();
+            }, 200);
+        });
         // Update credits with current user and make it clickable
         document.querySelector('.credits').innerHTML = 'Created by <a href="https://www.linkedin.com/in/danducvu" target="_blank">Dan Vu</a> | © 2025';
         document.querySelector('.credits').style.pointerEvents = 'auto';
@@ -1576,6 +1709,76 @@
         // Start animation
         init();
         animate();
+
+        // Touch event support for mobile devices
+        canvas.addEventListener('touchstart', function (event) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+            mouse.prevX = touch.clientX;
+            mouse.prevY = touch.clientY;
+            mouse.pressed = true;
+
+            // Update custom cursor for touch
+            customCursor.style.left = `${touch.clientX}px`;
+            customCursor.style.top = `${touch.clientY}px`;
+            customCursorDot.style.left = `${touch.clientX}px`;
+            customCursorDot.style.top = `${touch.clientY}px`;
+            customCursor.style.width = '50px';
+            customCursor.style.height = '50px';
+            customCursor.style.opacity = '0.8';
+
+            // Hide the guide after touch
+            setTimeout(() => {
+                interactiveGuide.classList.add('fade');
+            }, 1500);
+        });
+
+        canvas.addEventListener('touchmove', function (event) {
+            event.preventDefault();
+            const touch = event.touches[0];
+            mouse.prevX = mouse.x;
+            mouse.prevY = mouse.y;
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+            mouse.velocity.x = mouse.x - mouse.prevX;
+            mouse.velocity.y = mouse.y - mouse.prevY;
+
+            // Update custom cursor for touch
+            customCursor.style.left = `${touch.clientX}px`;
+            customCursor.style.top = `${touch.clientY}px`;
+            customCursorDot.style.left = `${touch.clientX}px`;
+            customCursorDot.style.top = `${touch.clientY}px`;
+        });
+
+        canvas.addEventListener('touchend', function (event) {
+            event.preventDefault();
+            mouse.pressed = false;
+            customCursor.style.width = '30px';
+            customCursor.style.height = '30px';
+            customCursor.style.opacity = '0.6';
+        });
+
+        // Optimize performance for mobile
+        function optimizeForDevice() {
+            if (isMobile) {
+                // Reduce particle count on mobile for better performance
+                const mobileParticleCount = Math.min(config.particleCount, 800);
+                document.getElementById('particle-count').value = mobileParticleCount;
+                config.particleCount = mobileParticleCount;
+                document.getElementById('particle-count-value').textContent = mobileParticleCount;
+
+                // Reduce other intensive effects
+                if (config.glowEnabled) {
+                    document.getElementById('btn-glow').click();
+                }
+            }
+        }
+
+        // Call optimization on init
+        optimizeForDevice();
+        init();
     </script>
 </body>
 
