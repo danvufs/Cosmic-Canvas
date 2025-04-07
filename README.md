@@ -21,7 +21,7 @@ Cosmic Canvas is an immersive web experience that creates stunning, interactive 
 - HTML5 Canvas for rendering
 
 ## How to Use
-1. Visit the [live demo](https://) or clone the repository and open index.html
+1. Visit the [live demo](https://danvufs.github.io/Cosmic-Canvas/) or clone the repository and open index.html
 2. Move your cursor around to interact with the particles
 3. Click and hold to create gravity wells and other effects
 4. Use the control panel (gear icon) to customize the experience
